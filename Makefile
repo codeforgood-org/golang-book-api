@@ -33,6 +33,14 @@ test-cover: ## Run tests with coverage
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
+bench: ## Run benchmarks
+	@echo "Running benchmarks..."
+	@go test -bench=. -benchmem ./...
+
+seed: ## Seed the database with sample data
+	@echo "Seeding sample data..."
+	@go run scripts/seed.go
+
 lint: ## Run linter (requires golangci-lint)
 	@echo "Running linter..."
 	@if command -v golangci-lint > /dev/null; then \

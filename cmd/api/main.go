@@ -29,8 +29,10 @@ func main() {
 
 	// Apply middleware
 	handler := middleware.Recovery(
-		middleware.Logger(
-			middleware.CORS(mux),
+		middleware.RequestID(
+			middleware.Logger(
+				middleware.CORS(mux),
+			),
 		),
 	)
 

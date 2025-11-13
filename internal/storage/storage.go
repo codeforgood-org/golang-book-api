@@ -13,6 +13,9 @@ type Storage interface {
 	// Create adds a new book and returns it with an assigned ID
 	Create(book models.Book) (*models.Book, error)
 
+	// Update updates an existing book
+	Update(id int, book models.Book) (*models.Book, error)
+
 	// Delete removes a book by its ID
 	Delete(id int) error
 }

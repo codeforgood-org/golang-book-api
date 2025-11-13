@@ -61,6 +61,22 @@ func (s *MemoryStorage) Create(book models.Book) (*models.Book, error) {
 	return &book, nil
 }
 
+// Update updates an existing book
+func (s *MemoryStorage) Update(id int, book models.Book) (*models.Book, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, b := range s.books {
+		if b.ID == id {
+			// Preserve the original ID
+			book.ID = id
+			s.books[i] = book
+			return &book, nil
+		}
+	}
+	return nil, models.ErrBookNotFound
+}
+
 // Delete removes a book by its ID
 func (s *MemoryStorage) Delete(id int) error {
 	s.mu.Lock()

@@ -1,0 +1,382 @@
+openapi: 3.0.3
+info:
+  title: Book API
+  description: A RESTful API for managing books with full CRUD operations, pagination, and filtering
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://github.com/codeforgood-org/golang-book-api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: books
+    description: Book management operations
+  - name: health
+    description: Health check operations
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check
+      description: Check if the API is running
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /books:
+    get:
+      tags:
+        - books
+      summary: Get all books
+      description: Retrieve a paginated list of books with optional filtering
+      operationId: getBooks
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: title
+          in: query
+          description: Filter by title (case-insensitive, partial match)
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Filter by author (case-insensitive, partial match)
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search in both title and author
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-Request-ID:
+              description: Unique request identifier
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Book'
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  total_pages:
+                    type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - books
+      summary: Create a book
+      description: Create a new book
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '201':
+          description: Book created successfully
+          headers:
+            X-Request-ID:
+              description: Unique request identifier
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /books/{id}:
+    get:
+      tags:
+        - books
+      summary: Get a book by ID
+      description: Retrieve a specific book by its ID
+      operationId: getBookByID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Book ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-Request-ID:
+              description: Unique request identifier
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - books
+      summary: Update a book
+      description: Update an existing book (full update)
+      operationId: updateBook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Book ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Book updated successfully
+          headers:
+            X-Request-ID:
+              description: Unique request identifier
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - books
+      summary: Partially update a book
+      description: Partially update an existing book
+      operationId: patchBook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Book ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Book updated successfully
+          headers:
+            X-Request-ID:
+              description: Unique request identifier
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - books
+      summary: Delete a book
+      description: Delete a book by its ID
+      operationId: deleteBook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Book ID
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Book deleted successfully
+          headers:
+            X-Request-ID:
+              description: Unique request identifier
+              schema:
+                type: string
+        '400':
+          description: Invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Book:
+      type: object
+      required:
+        - id
+        - title
+        - author
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the book
+          example: 123456
+        title:
+          type: string
+          description: Book title
+          example: "The Go Programming Language"
+        author:
+          type: string
+          description: Book author
+          example: "Alan A. A. Donovan"
+
+    BookInput:
+      type: object
+      required:
+        - title
+        - author
+      properties:
+        title:
+          type: string
+          description: Book title
+          minLength: 1
+          example: "The Go Programming Language"
+        author:
+          type: string
+          description: Book author
+          minLength: 1
+          example: "Alan A. A. Donovan"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Book not found"

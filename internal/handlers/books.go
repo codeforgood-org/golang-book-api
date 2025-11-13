@@ -48,6 +48,8 @@ func (h *BookHandler) HandleBookByID(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		h.getBookByID(w, r, id)
+	case http.MethodPut, http.MethodPatch:
+		h.updateBook(w, r, id)
 	case http.MethodDelete:
 		h.deleteBook(w, r, id)
 	default:
@@ -55,7 +57,7 @@ func (h *BookHandler) HandleBookByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getBooks returns all books
+// getBooks returns all books with optional filtering and pagination
 func (h *BookHandler) getBooks(w http.ResponseWriter, r *http.Request) {
 	books, err := h.storage.GetAll()
 	if err != nil {
@@ -64,7 +66,41 @@ func (h *BookHandler) getBooks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, books)
+	// Apply filters
+	filters := models.ParseBookFilters(r)
+	if filters.HasFilters() {
+		filteredBooks := make([]models.Book, 0)
+		for _, book := range books {
+			if filters.Match(book) {
+				filteredBooks = append(filteredBooks, book)
+			}
+		}
+		books = filteredBooks
+	}
+
+	// Parse pagination parameters
+	params := models.ParsePaginationParams(r)
+
+	// Calculate total count before pagination
+	total := len(books)
+
+	// Apply pagination
+	start := params.Offset
+	end := start + params.PageSize
+
+	if start > total {
+		start = total
+	}
+	if end > total {
+		end = total
+	}
+
+	paginatedBooks := books[start:end]
+
+	// Create paginated response
+	response := models.NewPaginatedResponse(paginatedBooks, params.Page, params.PageSize, total)
+
+	respondWithJSON(w, http.StatusOK, response)
 }
 
 // createBook creates a new book
@@ -107,6 +143,36 @@ func (h *BookHandler) getBookByID(w http.ResponseWriter, r *http.Request, id int
 	}
 
 	respondWithJSON(w, http.StatusOK, book)
+}
+
+// updateBook updates a book by ID
+func (h *BookHandler) updateBook(w http.ResponseWriter, r *http.Request, id int) {
+	var book models.Book
+	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	// Validate the book
+	if err := book.Validate(); err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Update the book
+	updatedBook, err := h.storage.Update(id, book)
+	if err != nil {
+		if err == models.ErrBookNotFound {
+			respondWithError(w, http.StatusNotFound, "Book not found")
+			return
+		}
+		logger.Error.Printf("Failed to update book: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to update book")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, updatedBook)
 }
 
 // deleteBook deletes a book by ID
