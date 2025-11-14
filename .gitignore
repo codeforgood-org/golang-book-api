@@ -23,3 +23,14 @@ go.work.sum
 
 # env file
 .env
+
+# Build artifacts
+bin/
+tmp/
+
+# Coverage files
+coverage.out
+coverage.html
+
+# Air (live reload) logs
+build-errors.log
